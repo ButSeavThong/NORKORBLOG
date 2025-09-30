@@ -1,11 +1,11 @@
 import './App.css'
-import MyHero from './components/layouts/hero'
+import HeroSection from './components/layouts/hero-section'
 
 function App() {
 
   return (
     <>
-      <MyHero/>
+    <HeroSection/>
     </>
   ) 
 }

@@ -15,11 +15,11 @@ export default function NavbarComponent() {
       <div className="px-12 md:px-[150px] mx-auto py-4 flex justify-between items-center">
         {/* Logo */}
         <NavLink to="/" className="flex items-center">
-          <img src="/image/logo.png" alt="Logo" className="h-15 w-auto" />
+          <img src="/logo.jpeg" alt="Logo" className="h-15 w-auto" />
         </NavLink>
 
         {/* Desktop Menu */}
-        <div className="hidden md:flex space-x-8 text-lg font-medium">
+        <div className="hidden md:flex space-x-8 text-[16px] font-medium">
           {menu.map((item) => (
             <NavLink
               key={item.path}
@@ -60,8 +60,8 @@ export default function NavbarComponent() {
 
           {/* Sign Up Button */}
           <NavLink
-            to="/signup"
-            className="bg-[#2563EB] text-white text-lg px-5 py-2 rounded-lg hover:bg-blue-900 transition-all duration-300 transform hover:-translate-y-1 shadow-md"
+            to="/register"
+            className="bg-[#2563EB] text-white text-[16px] px-5 py-2 rounded-lg hover:bg-blue-900 transition-all duration-300 transform hover:-translate-y-1 shadow-md"
           >
             Sign Up
           </NavLink>

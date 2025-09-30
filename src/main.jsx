@@ -8,6 +8,8 @@ import EducationPage from "./pages/education/EducationPage.jsx";
 import TechnologyPage from "./pages/technology/TechnologyPage.jsx";
 import RootLayout from "./components/layouts/root-layout.jsx";
 import { NotFoundPage } from "./pages/not-found/NotFound.jsx";
+import RegisterForm from "./pages/register/RegisterForm.jsx";
+import LoginPage from "./pages/login/LoginForm.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -21,6 +23,8 @@ createRoot(document.getElementById("root")).render(
           <Route path="/home" element={<Navigate to="/" replace />} />
         </Route>
         <Route path="/*" element={<NotFoundPage/>} />
+        <Route path="/register" element={<RegisterForm/>}/>
+        <Route path="/login" element={<LoginPage/>}/>
 
       </Routes>
     </BrowserRouter>
