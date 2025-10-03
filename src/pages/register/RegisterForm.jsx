@@ -1,6 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
-import { Link, useNavigate } from "react-router-dom"; // <-- add useNavigate
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  registerUser,
+  clearError,
+  uploadImage,
+} from "../../features/auth/authSlice";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -11,69 +19,97 @@ function RegisterForm() {
     bio: "",
   });
   const [profileFile, setProfileFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { loading, error, success } = useSelector((state) => state.auth);
 
-  // handle input change
+  useEffect(() => {
+    if (success) {
+      toast.success("Registration successful!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      navigate("/login");
+    }
+  }, [success, navigate]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error, {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  }, [error]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm({
-      ...form,
-      [name]: value,
-    });
+    setForm((s) => ({ ...s, [name]: value }));
+    if (error) dispatch(clearError());
   };
 
-  // handle file change
   const handleFileChange = (e) => {
-    setProfileFile(e.target.files[0]); // save selected file
+    const file = e.target.files[0];
+    if (file) {
+      const validTypes = ["image/png", "image/jpeg", "image/jpg"];
+      if (!validTypes.includes(file.type)) {
+        toast.warn("Only PNG, JPG, JPEG files are allowed!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
+      setProfileFile(file);
+    }
   };
 
-  // handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // basic validation
-    if (!form.username || !form.email || !form.password) {
-      alert("Username, Email, and Password are required!");
+    if (!form.username.trim() || !form.email.trim() || !form.password.trim()) {
+      toast.warn("Username, Email, and Password are required!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
       return;
     }
 
     try {
-      // if backend expects file upload → use FormData
-      const formData = new FormData();
-      formData.append("username", form.username);
-      formData.append("email", form.email);
-      formData.append("password", form.password);
-      formData.append("bio", form.bio);
+      let profileUrl = "";
 
       if (profileFile) {
-        formData.append("profileUrl", profileFile);
+        setUploading(true);
+        profileUrl = await dispatch(uploadImage(profileFile)).unwrap();
+        setUploading(false);
       }
 
-      const res = await fetch("https://blog-api.devnerd.store/register", {
-        method: "POST",
-        body: formData,
-      });
+      const registrationData = {
+        username: form.username,
+        email: form.email,
+        password: form.password,
+        bio: form.bio,
+        ...(profileUrl && { profileUrl }),
+      };
 
-      if (!res.ok) {
-        throw new Error("Failed to register");
-      }
-
-      const data = await res.json();
-      console.log("Server Response:", data);
-
-      alert("Registration successful! Redirecting to login...");
-      navigate("/login"); // redirect after success
+      await dispatch(registerUser(registrationData)).unwrap();
     } catch (err) {
-      console.error("Error:", err);
-      alert("Registration failed: " + err.message);
+      setUploading(false);
+      toast.error("Registration failed: " + (err || "Unknown error"), {
+        position: "top-right",
+        autoClose: 3000,
+      });
     }
-  }
+  };
+
+  const isLoading = loading || uploading;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+      <ToastContainer />
       <div className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden">
-        {/* Left panel */}
+        {/* Left Panel */}
         <div className="w-full md:w-1/2 bg-blue-600 text-white flex flex-col items-center justify-center p-6 md:p-10">
           <img
             src="https://cdn-icons-png.flaticon.com/512/4140/4140037.png"
@@ -88,7 +124,7 @@ function RegisterForm() {
           </p>
         </div>
 
-        {/* Right panel */}
+        {/* Right Panel */}
         <div className="w-full md:w-1/2 p-6 md:p-10 flex flex-col justify-center">
           <h2 className="text-xl md:text-2xl font-bold text-center mb-6">
             Welcome To Form Register
@@ -107,6 +143,7 @@ function RegisterForm() {
                 value={form.username}
                 onChange={handleChange}
                 className="w-full border rounded-lg px-4 py-2"
+                autoComplete="username"
               />
             </div>
 
@@ -120,6 +157,7 @@ function RegisterForm() {
                 value={form.email}
                 onChange={handleChange}
                 className="w-full border rounded-lg px-4 py-2"
+                autoComplete="email"
               />
             </div>
 
@@ -135,6 +173,7 @@ function RegisterForm() {
                 value={form.password}
                 onChange={handleChange}
                 className="w-full border rounded-lg px-4 py-2"
+                autoComplete="new-password"
               />
               <button
                 type="button"
@@ -148,7 +187,7 @@ function RegisterForm() {
             {/* Profile Upload */}
             <div>
               <label className="block text-gray-700 text-sm mb-2">
-                Profile Image
+                Profile Image {profileFile && "(Will be uploaded)"}
               </label>
               <div
                 className="border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 transition"
@@ -177,6 +216,7 @@ function RegisterForm() {
                   <div className="text-center text-gray-400">
                     <p className="text-sm">Click to upload</p>
                     <p className="text-xs">PNG, JPG, JPEG</p>
+                    <p className="text-xs mt-1 text-blue-500">Optional</p>
                   </div>
                 )}
               </div>
@@ -204,13 +244,39 @@ function RegisterForm() {
             {/* Register button */}
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-2 md:py-3 rounded-lg font-semibold hover:bg-blue-700 transition text-sm md:text-base"
+              disabled={isLoading}
+              className="w-full bg-blue-600 text-white py-2 md:py-3 rounded-lg font-semibold hover:bg-blue-700 transition text-sm md:text-base disabled:opacity-60 flex items-center justify-center"
             >
-              Register
+              {isLoading ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  {uploading ? "Uploading Image..." : "Registering..."}
+                </>
+              ) : (
+                "Register"
+              )}
             </button>
           </form>
 
-          {/* Already have account */}
           <p className="text-center text-xs md:text-sm mt-6 text-gray-600">
             Already have an account?{" "}
             <Link to="/login" className="text-blue-600 hover:underline">

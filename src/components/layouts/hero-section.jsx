@@ -1,67 +1,62 @@
-"use client";
-
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Search, TrendingUp, Users } from "lucide-react";
+import { fetchAllBlogs } from "../../features/blog/blogSlice";
+import BlogCard from "../blog/BlogCard";
 
 const HeroSection = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
+  const dispatch = useDispatch();
+
+  const { blogs, loading, error } = useSelector((state) => state.blog);
+
+  useEffect(() => {
+    dispatch(fetchAllBlogs({ page_size: 11, page: 1, sort_by: "created_at" }));
+  }, [dispatch]);
 
   const filters = [
     "All",
     "Technology",
-    "React",
+    "Web Development",
     "Design",
     "JavaScript",
-    "CSS",
+    "React",
     "Career",
   ];
 
-  const featuredArticles = [
-    {
-      id: 1,
-      title: "Getting Started with React Hooks",
-      category: "Technology",
-      image: "/coding-screen-with-react-code.jpg",
-      readTime: "5 min read",
-    },
-    {
-      id: 2,
-      title: "Modern CSS Grid Layouts",
-      category: "React",
-      image: "/react-development-interface.jpg",
-      readTime: "8 min read",
-    },
-    {
-      id: 3,
-      title: "UI/UX Design Principles",
-      category: "Design",
-      image: "/design-wireframes-and-mockups.jpg",
-      readTime: "6 min read",
-    },
+  // Filter blogs based on search and active filter
+  const filteredBlogs = blogs.filter((blog) => {
+    const matchesSearch =
+      blog.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      blog.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      blog.author?.username.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesFilter =
+      activeFilter === "All" ||
+      blog.categories?.some((cat) =>
+        cat.name.toLowerCase().includes(activeFilter.toLowerCase())
+      );
+
+    return matchesSearch && matchesFilter;
+  });
+
+  // Get unique categories from blogs for filters
+  const availableCategories = [
+    ...new Set(
+      blogs.flatMap((blog) => blog.categories?.map((cat) => cat.name) || [])
+    ),
   ];
 
-  const filteredArticles =
-    activeFilter === "All"
-      ? featuredArticles
-      : featuredArticles.filter(
-          (article) =>
-            article.category === activeFilter ||
-            article.title.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-
-  const searchFilteredArticles = searchQuery
-    ? filteredArticles.filter(
-        (article) =>
-          article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          article.category.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : filteredArticles;
+  const allFilters = [
+    "All",
+    ...availableCategories,
+    ...filters.filter((f) => f !== "All"),
+  ];
+  const uniqueFilters = [...new Set(allFilters)];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
-     
-
       {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-2 gap-12 items-center">
         {/* Left Content */}
@@ -92,8 +87,8 @@ const HeroSection = () => {
           </div>
 
           {/* Filter Buttons */}
-          <div className="flex flex-wrap gap-3 mb-10">
-            {filters.map((filter) => (
+          <div className="flex flex-wrap gap-3 mb-10 max-h-32 overflow-y-auto">
+            {uniqueFilters.slice(0, 10).map((filter) => (
               <button
                 key={filter}
                 onClick={() => setActiveFilter(filter)}
@@ -131,54 +126,55 @@ const HeroSection = () => {
           </div>
           <div className="flex items-center gap-2 text-gray-600">
             <Users className="w-4 h-4" />
-            <span className="text-sm">1.2k readers this week</span>
+            <span className="text-sm">{blogs.length} articles published</span>
           </div>
         </div>
 
-        {/* Articles Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {searchFilteredArticles.map((article) => (
-            <div
-              key={article.id}
-              className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 group cursor-pointer"
-            >
-              <div className="relative">
-                <img
-                  src={article.image || "/placeholder.svg"}
-                  alt={article.title}
-                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute top-4 left-4">
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm font-medium text-white ${
-                      article.category === "Technology"
-                        ? "bg-teal-600"
-                        : article.category === "React"
-                        ? "bg-blue-600"
-                        : "bg-purple-600"
-                    }`}
-                  >
-                    {article.category}
-                  </span>
-                </div>
+        {/* Loading State */}
+        {loading && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 animate-pulse"
+              >
+                <div className="h-48 bg-gray-200 rounded-lg mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
               </div>
-              <div className="p-6">
-                <h3 className="font-semibold text-lg text-gray-900 mb-2 group-hover:text-teal-600 transition-colors">
-                  {article.title}
-                </h3>
-                <p className="text-gray-500 text-sm">{article.readTime}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {searchFilteredArticles.length === 0 && (
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-12">
+            <p className="text-red-600 mb-4">Error loading blogs: {error}</p>
+            <button
+              onClick={() => dispatch(fetchAllBlogs())}
+              className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {/* Blogs Grid */}
+        {!loading && !error && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredBlogs.map((blog) => (
+              <BlogCard key={blog.id} blog={blog} />
+            ))}
+          </div>
+        )}
+
+        {!loading && filteredBlogs.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">
               No articles found matching your search.
             </p>
           </div>
-        )}  
+        )}
       </div>
     </div>
   );
