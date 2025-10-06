@@ -1,7 +1,15 @@
 import React, { useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchBlogById, clearError } from "../../features/blog/blogSlice"; // Remove clearCurrentBlog
+import { 
+  fetchBlogById, 
+  clearError, 
+  likeBlog, 
+  bookmarkBlog,
+  deleteBlog,
+  optimisticLike,
+  optimisticBookmark
+} from "../../features/blog/blogSlice";
 import {
   Calendar,
   Clock,
@@ -9,25 +17,101 @@ import {
   Bookmark,
   Share,
   ArrowLeft,
+  Edit,
+  Trash2,
 } from "lucide-react";
+import { toast } from "react-toastify";
 
 const BlogDetail = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
-  const { currentBlog, loading, error } = useSelector((state) => state.blog);
+  const navigate = useNavigate();
+  const { 
+    currentBlog, 
+    loading, 
+    error, 
+    likeLoading, 
+    bookmarkLoading, 
+    deleting,
+    likingBlogId,
+    bookmarkingBlogId
+  } = useSelector((state) => state.blog);
+  const { user, token } = useSelector((state) => state.auth);
+
+  const isAuthor = user && currentBlog && user.id === currentBlog.author_id;
+  const isLiking = likingBlogId === id;
+  const isBookmarking = bookmarkingBlogId === id;
 
   useEffect(() => {
     if (id) {
       dispatch(fetchBlogById(id));
     }
 
-    // Cleanup function - just clear error if clearCurrentBlog doesn't exist
     return () => {
       dispatch(clearError());
-      // If clearCurrentBlog exists, use it, otherwise just clear error
-      // dispatch(clearCurrentBlog()); // Comment out if causing error
     };
   }, [id, dispatch]);
+
+  const handleLike = async () => {
+    if (!token) {
+      toast.error("Please login to like blog");
+      return;
+    }
+
+    // Optimistic update
+    dispatch(optimisticLike({ blogId: id }));
+
+    try {
+      await dispatch(likeBlog(id)).unwrap();
+    } catch (error) {
+      toast.error("Failed to like blog");
+    }
+  };
+
+  const handleBookmark = async () => {
+    if (!token) {
+      toast.error("Please login to bookmark blog");
+      return;
+    }
+
+    // Optimistic update
+    dispatch(optimisticBookmark({ blogId: id }));
+
+    try {
+      await dispatch(bookmarkBlog(id)).unwrap();
+    } catch (error) {
+      toast.error("Failed to bookmark blog");
+    }
+  };
+
+  const handleEdit = () => {
+    navigate(`/edit-blog/${id}`);
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm("Are you sure you want to delete this blog?")) {
+      try {
+        await dispatch(deleteBlog(id)).unwrap();
+        toast.success("Blog deleted successfully");
+        navigate("/");
+      } catch (error) {
+        toast.error("Failed to delete blog");
+      }
+    }
+  };
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: currentBlog.title,
+        text: currentBlog.content.substring(0, 100),
+        url: window.location.href,
+      });
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      toast.success("Link copied to clipboard!");
+    }
+  };
 
   if (loading) {
     return (
@@ -115,15 +199,11 @@ const BlogDetail = () => {
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
                 <Link
-                  to={`/author/${
-                    currentBlog.author?.id || currentBlog.author_id
-                  }`}
+                  to={`/author/${currentBlog.author?.id || currentBlog.author_id}`}
                   className="flex items-center gap-4 hover:opacity-80 transition-opacity"
                 >
                   <img
-                    src={
-                      currentBlog.author?.profileUrl || "/default-avatar.png"
-                    }
+                    src={currentBlog.author?.profileUrl || "/default-avatar.png"}
                     alt={currentBlog.author?.username}
                     className="w-12 h-12 rounded-full object-cover"
                   />
@@ -147,15 +227,61 @@ const BlogDetail = () => {
 
               {/* Actions */}
               <div className="flex items-center gap-4">
-                <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-red-500 transition-colors">
-                  <Heart className="w-5 h-5" />
+                {isAuthor && (
+                  <div className="flex items-center gap-2 mr-4">
+                    <button
+                      onClick={handleEdit}
+                      className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-teal-600 transition-colors border border-gray-300 rounded-lg"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      disabled={deleting}
+                      className="flex items-center gap-2 px-4 py-2 text-red-600 hover:text-red-700 transition-colors border border-red-300 rounded-lg disabled:opacity-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {deleting ? "Deleting..." : "Delete"}
+                    </button>
+                  </div>
+                )}
+                <button 
+                  onClick={handleLike}
+                  disabled={isLiking}
+                  className={`flex items-center gap-2 px-4 py-2 transition-colors rounded-lg ${
+                    currentBlog.is_liked 
+                      ? "text-red-500 bg-red-50 border border-red-200" 
+                      : "text-gray-600 hover:text-red-500 border border-gray-300"
+                  } ${isLiking ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  {isLiking ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-500 mr-2"></div>
+                  ) : (
+                    <Heart className={`w-5 h-5 ${currentBlog.is_liked ? "fill-current" : ""}`} />
+                  )}
                   <span>{currentBlog.number_of_likes || 0}</span>
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-blue-500 transition-colors">
-                  <Bookmark className="w-5 h-5" />
+                <button 
+                  onClick={handleBookmark}
+                  disabled={isBookmarking}
+                  className={`flex items-center gap-2 px-4 py-2 transition-colors rounded-lg ${
+                    currentBlog.is_bookmarked 
+                      ? "text-blue-500 bg-blue-50 border border-blue-200" 
+                      : "text-gray-600 hover:text-blue-500 border border-gray-300"
+                  } ${isBookmarking ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  {isBookmarking ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
+                  ) : (
+                    <Bookmark className={`w-5 h-5 ${currentBlog.is_bookmarked ? "fill-current" : ""}`} />
+                  )}
                   <span>{currentBlog.number_of_bookmarks || 0}</span>
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-teal-600 transition-colors">
+                <button 
+                  onClick={handleShare}
+                  className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-teal-600 transition-colors border border-gray-300 rounded-lg"
+                >
                   <Share className="w-5 h-5" />
                 </button>
               </div>
@@ -181,7 +307,7 @@ const BlogDetail = () => {
           </div>
         </div>
 
-        {/* Related Blogs Section (Placeholder for now) */}
+        {/* Related Blogs Section */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
             More from CAMPOST

@@ -9,20 +9,21 @@ import {
   Calendar,
 } from "lucide-react";
 import {
-  fetchAllBlogs,
+  fetchBlogsByCategory,
   fetchCategories,
   setSearchQuery,
   setCurrentPage,
   clearFilters,
+  clearCategoryBlogs,
 } from "../../features/blog/blogSlice";
 import BlogCard from "../../components/blog/BlogCard";
 
 const EducationPage = () => {
   const dispatch = useDispatch();
   const {
-    blogs,
-    loading,
-    error,
+    categoryBlogs, // Use categoryBlogs instead of blogs
+    categoryBlogsLoading, // Use categoryBlogsLoading instead of loading
+    categoryBlogsError, // Use categoryBlogsError instead of error
     currentPage,
     totalPages,
     totalBlogs,
@@ -31,47 +32,37 @@ const EducationPage = () => {
   } = useSelector((state) => state.blog);
 
   const [localSearch, setLocalSearch] = useState("");
-  const [educationBlogs, setEducationBlogs] = useState([]);
 
-  // Load blogs with education filter
-  const loadBlogs = (page, search = searchQuery) => {
+  // Education category ID - replace with your actual education category ID
+  const EDUCATION_CATEGORY_ID = "61be26f7-981d-43e3-a34e-e8a4f888d582";
+
+  // Load education blogs with category filter
+  const loadEducationBlogs = (page, search = searchQuery) => {
     dispatch(
-      fetchAllBlogs({
+      fetchBlogsByCategory({
+        categoryId: EDUCATION_CATEGORY_ID,
         page,
         page_size: 12,
         sort_by: "created_at",
         search,
-        category: "Education", // Filter by Education category
       })
     );
   };
 
   // Initial load
   useEffect(() => {
-    loadBlogs(1);
-    dispatch(fetchCategories());
-  }, [dispatch]);
-
-  // Filter blogs for education content
-  useEffect(() => {
-    const eduBlogs = blogs.filter(
-      (blog) =>
-        blog.categories?.some(
-          (cat) =>
-            cat.name.toLowerCase().includes("education") ||
-            cat.name.toLowerCase().includes("learning") ||
-            cat.name.toLowerCase().includes("tutorial") ||
-            blog.title.toLowerCase().includes("learn") ||
-            blog.content.toLowerCase().includes("education")
-        ) ||
-        // Include blogs that are specifically about educational topics
-        blog.title.toLowerCase().includes("guide") ||
-        blog.title.toLowerCase().includes("tutorial") ||
-        blog.title.toLowerCase().includes("how to") ||
-        blog.title.toLowerCase().includes("learn")
+    console.log(
+      "📚 Loading education blogs with category ID:",
+      EDUCATION_CATEGORY_ID
     );
-    setEducationBlogs(eduBlogs);
-  }, [blogs]);
+    loadEducationBlogs(1);
+    dispatch(fetchCategories());
+
+    // Cleanup on unmount
+    return () => {
+      dispatch(clearCategoryBlogs());
+    };
+  }, [dispatch]);
 
   // Debounce search
   useEffect(() => {
@@ -79,7 +70,7 @@ const EducationPage = () => {
       if (localSearch !== searchQuery) {
         dispatch(setSearchQuery(localSearch));
         dispatch(setCurrentPage(1));
-        loadBlogs(1, localSearch);
+        loadEducationBlogs(1, localSearch);
       }
     }, 500);
 
@@ -89,7 +80,7 @@ const EducationPage = () => {
   // Handle page change
   const handlePageChange = (page) => {
     dispatch(setCurrentPage(page));
-    loadBlogs(page, searchQuery);
+    loadEducationBlogs(page, searchQuery);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -97,11 +88,11 @@ const EducationPage = () => {
   const handleClearSearch = () => {
     setLocalSearch("");
     dispatch(clearFilters());
-    loadBlogs(1, "");
+    loadEducationBlogs(1, "");
   };
 
   // Get featured education blogs
-  const featuredEducationBlogs = educationBlogs
+  const featuredEducationBlogs = categoryBlogs
     .filter((blog) => blog.number_of_likes > 5 || blog.number_of_bookmarks > 3)
     .slice(0, 3);
 
@@ -131,7 +122,7 @@ const EducationPage = () => {
               placeholder="Search educational articles, tutorials, guides..."
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 text-lg border border-gray-300 rounded-full bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-12 pr-4 py-4 text-lg border border-gray-300 rounded-full bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
             />
           </div>
         </div>
@@ -201,7 +192,7 @@ const EducationPage = () => {
             </p>
           </div>
           <div className="flex items-center gap-4 text-sm text-gray-600">
-            <span>{educationBlogs.length} educational articles</span>
+            <span>{categoryBlogs.length} educational articles</span>
             {searchQuery && (
               <button
                 onClick={handleClearSearch}
@@ -214,7 +205,7 @@ const EducationPage = () => {
         </div>
 
         {/* Loading State */}
-        {loading && educationBlogs.length === 0 && (
+        {categoryBlogsLoading && categoryBlogs.length === 0 && (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
               <div
@@ -230,13 +221,13 @@ const EducationPage = () => {
         )}
 
         {/* Error State */}
-        {error && (
+        {categoryBlogsError && (
           <div className="text-center py-12">
             <p className="text-red-600 mb-4">
-              Error loading educational content: {error}
+              Error loading educational content: {categoryBlogsError}
             </p>
             <button
-              onClick={() => loadBlogs(1)}
+              onClick={() => loadEducationBlogs(1)}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Try Again
@@ -245,16 +236,16 @@ const EducationPage = () => {
         )}
 
         {/* Education Blogs Grid */}
-        {!loading && !error && (
+        {!categoryBlogsLoading && !categoryBlogsError && (
           <>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {educationBlogs.map((blog) => (
+              {categoryBlogs.map((blog) => (
                 <BlogCard key={blog.id} blog={blog} />
               ))}
             </div>
 
             {/* No Results */}
-            {educationBlogs.length === 0 && (
+            {categoryBlogs.length === 0 && (
               <div className="text-center py-12">
                 <div className="text-gray-400 mb-4">
                   <BookOpen className="w-16 h-16 mx-auto" />
@@ -283,7 +274,7 @@ const EducationPage = () => {
         )}
 
         {/* Pagination */}
-        {totalPages > 1 && educationBlogs.length > 0 && (
+        {totalPages > 1 && categoryBlogs.length > 0 && (
           <div className="flex justify-center items-center gap-2 py-8">
             <button
               onClick={() => handlePageChange(currentPage - 1)}

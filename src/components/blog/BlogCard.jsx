@@ -1,8 +1,15 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Calendar, Clock, Heart, Bookmark } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { likeBlog, bookmarkBlog, optimisticLike, optimisticBookmark } from "../../features/blog/blogSlice";
+import { toast } from "react-toastify";
 
 const BlogCard = ({ blog }) => {
+  const dispatch = useDispatch();
+  const { likeLoading, bookmarkLoading, likingBlogId, bookmarkingBlogId } = useSelector((state) => state.blog);
+  const { token } = useSelector((state) => state.auth);
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -16,6 +23,49 @@ const BlogCard = ({ blog }) => {
     const words = content?.split(/\s+/).length || 0;
     return Math.ceil(words / wordsPerMinute);
   };
+
+  const handleLike = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!token) {
+      toast.error("Please login to like blog");
+      return;
+    }
+
+    // Optimistic update
+    dispatch(optimisticLike({ blogId: blog.id }));
+
+    try {
+      await dispatch(likeBlog(blog.id)).unwrap();
+    } catch (error) {
+      toast.error("Failed to like blog");
+      // The revert will be handled in the rejected case
+    }
+  };
+
+  const handleBookmark = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!token) {
+      toast.error("Please login to bookmark blog");
+      return;
+    }
+
+    // Optimistic update
+    dispatch(optimisticBookmark({ blogId: blog.id }));
+
+    try {
+      await dispatch(bookmarkBlog(blog.id)).unwrap();
+    } catch (error) {
+      toast.error("Failed to bookmark blog");
+      // The revert will be handled in the rejected case
+    }
+  };
+
+  const isLiking = likingBlogId === blog.id;
+  const isBookmarking = bookmarkingBlogId === blog.id;
 
   return (
     <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 group">
@@ -45,7 +95,7 @@ const BlogCard = ({ blog }) => {
 
       {/* Content */}
       <div className="p-6">
-        {/* Author Info - Make this clickable */}
+        {/* Author Info */}
         <div className="flex items-center gap-3 mb-4">
           <Link
             to={`/author/${blog.author?.id || blog.author_id}`}
@@ -87,12 +137,36 @@ const BlogCard = ({ blog }) => {
         {/* Stats and Actions */}
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
           <div className="flex items-center gap-4 text-sm text-gray-500">
-            <button className="flex items-center gap-1 hover:text-red-500 transition-colors">
-              <Heart className="w-4 h-4" />
+            <button 
+              onClick={handleLike}
+              disabled={isLiking}
+              className={`flex items-center gap-1 transition-colors ${
+                blog.is_liked 
+                  ? "text-red-500" 
+                  : "text-gray-500 hover:text-red-500"
+              } ${isLiking ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              {isLiking ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-500"></div>
+              ) : (
+                <Heart className={`w-4 h-4 ${blog.is_liked ? "fill-current" : ""}`} />
+              )}
               <span>{blog.number_of_likes || 0}</span>
             </button>
-            <button className="flex items-center gap-1 hover:text-blue-500 transition-colors">
-              <Bookmark className="w-4 h-4" />
+            <button 
+              onClick={handleBookmark}
+              disabled={isBookmarking}
+              className={`flex items-center gap-1 transition-colors ${
+                blog.is_bookmarked 
+                  ? "text-blue-500" 
+                  : "text-gray-500 hover:text-blue-500"
+              } ${isBookmarking ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              {isBookmarking ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+              ) : (
+                <Bookmark className={`w-4 h-4 ${blog.is_bookmarked ? "fill-current" : ""}`} />
+              )}
               <span>{blog.number_of_bookmarks || 0}</span>
             </button>
           </div>

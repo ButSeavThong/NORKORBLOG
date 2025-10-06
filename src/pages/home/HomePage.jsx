@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Search, Filter, X, TrendingUp, Users } from "lucide-react";
+import { Search, X, TrendingUp, Users, ChevronDown, BookOpen } from "lucide-react";
 import {
   fetchAllBlogs,
   fetchCategories,
@@ -26,91 +26,131 @@ const HomePage = () => {
     categories,
   } = useSelector((state) => state.blog);
 
-  const [localSearch, setLocalSearch] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
+  const [localSearch, setLocalSearch] = useState(searchQuery || "");
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [activeFilter, setActiveFilter] = useState("All");
 
   // Load blogs with filters
-  const loadBlogs = (
+  const loadBlogs = useCallback((
     page,
     search = searchQuery,
     category = selectedCategory
   ) => {
+    console.log("🔄 Loading blogs:", { page, search, category });
     dispatch(
       fetchAllBlogs({
         page,
         page_size: 12,
         sort_by: "created_at",
-        search,
-        category,
+        search: search || "",
+        category: category || "",
       })
     );
-  };
+  }, [dispatch, searchQuery, selectedCategory]);
 
   // Initial load and categories fetch
   useEffect(() => {
     loadBlogs(1);
     dispatch(fetchCategories());
-  }, [dispatch]);
+  }, [dispatch, loadBlogs]);
 
   // Debounce search
   useEffect(() => {
+    if (localSearch === "" && searchQuery === "") {
+      return;
+    }
+
     const timer = setTimeout(() => {
       if (localSearch !== searchQuery) {
+        console.log("🔍 Search triggered:", { localSearch, searchQuery });
         dispatch(setSearchQuery(localSearch));
         dispatch(setCurrentPage(1));
         loadBlogs(1, localSearch, selectedCategory);
       }
-    }, 500);
+    }, 800);
 
     return () => clearTimeout(timer);
-  }, [localSearch, searchQuery, selectedCategory, dispatch]);
+  }, [localSearch, searchQuery, selectedCategory, dispatch, loadBlogs]);
 
   // Handle category filter
-  const handleCategoryFilter = (category) => {
+  const handleCategoryFilter = useCallback((category) => {
     const newCategory = category === selectedCategory ? "" : category;
+    console.log("🎯 Category filter:", { newCategory, previous: selectedCategory });
+    
     dispatch(setSelectedCategory(newCategory));
     dispatch(setCurrentPage(1));
+    setActiveFilter(newCategory ? getCategoryNameById(categories, newCategory) : "All");
+    setShowCategoryDropdown(false);
+    
     loadBlogs(1, searchQuery, newCategory);
-    setActiveFilter(category === selectedCategory ? "All" : category);
-  };
+  }, [selectedCategory, searchQuery, dispatch, loadBlogs, categories]);
 
   // Handle page change
-  const handlePageChange = (page) => {
+  const handlePageChange = useCallback((page) => {
+    console.log("📄 Page change:", page);
     dispatch(setCurrentPage(page));
     loadBlogs(page, searchQuery, selectedCategory);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  }, [dispatch, loadBlogs, searchQuery, selectedCategory]);
 
   // Clear all filters
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
+    console.log("🧹 Clearing all filters");
     setLocalSearch("");
     setActiveFilter("All");
     dispatch(clearFilters());
+    setShowCategoryDropdown(false);
     loadBlogs(1, "", "");
+  }, [dispatch, loadBlogs]);
+
+  // Get category name by ID
+  const getCategoryNameById = useCallback((categoriesList, categoryId) => {
+    if (!categoryId) return "All Categories";
+    const category = categoriesList.find(cat => cat.id === categoryId);
+    return category ? category.name : "Unknown Category";
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showCategoryDropdown && !event.target.closest(".category-dropdown")) {
+        setShowCategoryDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showCategoryDropdown]);
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setLocalSearch(value);
+    
+    if (value === "" && searchQuery !== "") {
+      dispatch(setSearchQuery(""));
+      dispatch(setCurrentPage(1));
+      loadBlogs(1, "", selectedCategory);
+    }
   };
 
-  // Get unique categories from current blogs for quick filter
-  const availableCategories = [
-    ...new Set(
-      blogs.flatMap((blog) => blog.categories?.map((cat) => cat.name) || [])
-    ),
-  ];
+  // Handle search submit (when user presses enter)
+  const handleSearchSubmit = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      dispatch(setSearchQuery(localSearch));
+      dispatch(setCurrentPage(1));
+      loadBlogs(1, localSearch, selectedCategory);
+    }
+  };
 
-  // Quick filter buttons (similar to your original design)
-  const filters = [
-    "All",
-    "Technology",
-    "Web Development",
-    "Design",
-    "JavaScript",
-    "React",
-    "Career",
-  ];
+ 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
-      {/* Hero Section - Same as your original design */}
+      {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-2 gap-12 items-center">
         {/* Left Content */}
         <div className="text-center md:text-left">
@@ -134,33 +174,96 @@ const HomePage = () => {
               type="text"
               placeholder="Search articles, topics, or authors..."
               value={localSearch}
-              onChange={(e) => setLocalSearch(e.target.value)}
+              onChange={handleSearchChange}
+              onKeyPress={handleSearchSubmit}
               className="w-full pl-12 pr-4 py-4 text-lg border border-gray-200 rounded-full bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             />
+            {localSearch && (
+              <button
+                onClick={() => {
+                  setLocalSearch("");
+                  dispatch(setSearchQuery(""));
+                  dispatch(setCurrentPage(1));
+                  loadBlogs(1, "", selectedCategory);
+                }}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
           </div>
 
-          {/* Quick Filter Buttons */}
-          <div className="flex flex-wrap gap-3 mb-10">
-            {filters.map((filter) => (
-              <button
-                key={filter}
-                onClick={() => {
-                  if (filter === "All") {
-                    handleClearFilters();
-                  } else {
-                    handleCategoryFilter(filter);
-                  }
-                }}
-                className={`px-6 py-3 rounded-full font-medium transition-all duration-200 ${
-                  activeFilter === filter
-                    ? "bg-teal-600 text-white shadow-lg"
-                    : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
-              >
-                {filter}
-              </button>
-            ))}
+          {/* Category Filter Dropdown */}
+          <div className="relative category-dropdown max-w-lg mb-8">
+            <button
+              onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+              className="w-full flex items-center justify-between px-4 py-4 text-lg border border-gray-200 rounded-full bg-white shadow-sm hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            >
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-5 h-5 text-gray-400" />
+                <span className="text-gray-700">
+                  {getCategoryNameById(categories, selectedCategory)}
+                </span>
+              </div>
+              <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showCategoryDropdown ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Dropdown Menu */}
+            {showCategoryDropdown && (
+              <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-lg max-h-80 overflow-y-auto">
+                <div className="p-2">
+                  {/* All Categories Option */}
+                  <button
+                    onClick={() => handleCategoryFilter("")}
+                    className={`w-full flex items-center gap-3 px-3 py-3 text-left rounded-xl transition-colors ${
+                      !selectedCategory
+                        ? "bg-teal-50 text-teal-700 border border-teal-200"
+                        : "text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="w-2 h-2 rounded-full bg-teal-500"></div>
+                    <span className="font-medium">All Categories</span>
+                  </button>
+
+                  <div className="border-t border-gray-100 my-2"></div>
+
+                  {/* Categories List */}
+                  {categories.map((category) => (
+                    <button
+                      key={category.id}
+                      onClick={() => handleCategoryFilter(category.id)}
+                      className={`w-full flex items-center gap-3 px-3 py-3 text-left rounded-xl transition-colors ${
+                        selectedCategory === category.id
+                          ? "bg-teal-50 text-teal-700 border border-teal-200"
+                          : "text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      <div className={`w-2 h-2 rounded-full ${
+                        selectedCategory === category.id ? 'bg-teal-500' : 'bg-gray-300'
+                      }`}></div>
+                      <div className="flex-1">
+                        <span className="font-medium block">{category.name}</span>
+                        {category.description && (
+                          <span className="text-sm text-gray-500 block mt-1">
+                            {category.description}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+
+                  {/* No Categories State */}
+                  {categories.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <BookOpen className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                      <p>No categories available</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
+
         </div>
 
         {/* Right Side Hero Image */}
@@ -174,88 +277,50 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Search and Filters Section */}
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-8">
-          {/* Filters Bar */}
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <Filter className="w-4 h-4" />
-                Advanced Filters
-                {(searchQuery || selectedCategory) && (
-                  <span className="bg-teal-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {(searchQuery ? 1 : 0) + (selectedCategory ? 1 : 0)}
+      {/* Current Filters Display */}
+      {(searchQuery || selectedCategory) && (
+        <div className="max-w-7xl mx-auto px-6 mb-8">
+          <div className="bg-white rounded-2xl shadow-sm p-6">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 bg-teal-50 border border-teal-200 rounded-full px-4 py-2">
+                  {selectedCategory && (
+                    <span className="text-teal-700 font-medium">
+                      Category: {getCategoryNameById(categories, selectedCategory)}
+                    </span>
+                  )}
+                  {searchQuery && (
+                    <span className="text-teal-700 font-medium">
+                      {selectedCategory && " • "}
+                      Search: "{searchQuery}"
+                    </span>
+                  )}
+                  <button
+                    onClick={handleClearFilters}
+                    className="text-teal-600 hover:text-teal-800 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-sm text-gray-600">
+                Showing {blogs.length} of {totalBlogs} articles
+                {selectedCategory && (
+                  <span className="text-teal-600 font-medium">
+                    {" "}in {getCategoryNameById(categories, selectedCategory)}
                   </span>
                 )}
-              </button>
-
-              {(searchQuery || selectedCategory) && (
-                <button
-                  onClick={handleClearFilters}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                  Clear filters
-                </button>
-              )}
-            </div>
-
-            <div className="text-sm text-gray-600">
-              Showing {blogs.length} of {totalBlogs} articles
+                {searchQuery && (
+                  <span className="text-teal-600 font-medium">
+                    {" "}matching "{searchQuery}"
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-
-          {/* Expanded Filters */}
-          {showFilters && (
-            <div className="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-              <h3 className="font-medium text-gray-900 mb-3">Categories</h3>
-              <div className="flex flex-wrap gap-2">
-                {categories.map((category) => (
-                  <button
-                    key={category.id}
-                    onClick={() => handleCategoryFilter(category.name)}
-                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                      selectedCategory === category.name
-                        ? "bg-teal-600 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
-                    }`}
-                  >
-                    {category.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Quick Category Filters */}
-          {availableCategories.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">
-                Popular Categories
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {availableCategories.slice(0, 8).map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => handleCategoryFilter(category)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                      selectedCategory === category
-                        ? "bg-teal-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    {category}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
-      </div>
+      )}
 
       {/* Featured Articles Section */}
       <div className="max-w-7xl mx-auto px-6 py-12">
@@ -263,7 +328,8 @@ const HomePage = () => {
           <div className="flex items-center gap-3">
             <TrendingUp className="w-6 h-6 text-teal-600" />
             <h2 className="text-3xl font-bold text-gray-900">
-              Featured Articles
+              {selectedCategory ? getCategoryNameById(categories, selectedCategory) : "Featured"} Articles
+              {searchQuery && ` matching "${searchQuery}"`}
             </h2>
           </div>
           <div className="flex items-center gap-2 text-gray-600">

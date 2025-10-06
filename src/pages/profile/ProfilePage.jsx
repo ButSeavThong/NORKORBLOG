@@ -8,7 +8,7 @@ import {
 } from "../../features/auth/authSlice";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import BlogCard from "../../components/blog/BlogCard";
+import UserBlogCard from "../../components/blog/UserBlogCard";
 
 function ProfilePage() {
   const dispatch = useDispatch();
@@ -70,6 +70,7 @@ function ProfilePage() {
 
   const userData = user.profile || user;
   const userBlogs = authorBlogs || [];
+  const userId = userData.id || user.id;
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -126,9 +127,12 @@ function ProfilePage() {
                 >
                   Write Story
                 </Link>
-                <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <Link
+                  to="/edit-profile"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
                   Edit Profile
-                </button>
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
@@ -181,12 +185,17 @@ function ProfilePage() {
               </div>
             ) : userBlogs.length > 0 ? (
               <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-6">
-                  Your Stories ({userBlogs.length})
-                </h2>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Your Stories ({userBlogs.length})
+                  </h2>
+                  <div className="text-sm text-gray-500">
+                    Click the ••• menu on each card to edit or delete
+                  </div>
+                </div>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {userBlogs.map((blog) => (
-                    <BlogCard key={blog.id} blog={blog} />
+                    <UserBlogCard key={blog.id} blog={blog} userId={userId} />
                   ))}
                 </div>
               </div>

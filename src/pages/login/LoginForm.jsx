@@ -219,25 +219,7 @@ function LoginPage() {
               )}
             </div>
 
-            {/* Remember me & Forgot password */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs md:text-sm gap-2">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 cursor-pointer"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  disabled={loading}
-                />
-                <span>Remember me</span>
-              </label>
-              <a
-                href="/forgot-password"
-                className="text-blue-600 hover:underline"
-              >
-                Forgot password?
-              </a>
-            </div>
+            
 
             {/* Submit Button */}
             <button

@@ -3,12 +3,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchProfile, logout } from "../../features/auth/authSlice";
-import { useEffect, useState } from "react"; // Add useState import
+import { useEffect, useState } from "react";
 
 export default function NavbarComponent() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // State for mobile menu
+
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // get auth state
   const { user, token } = useSelector((state) => state.auth);
@@ -23,22 +25,33 @@ export default function NavbarComponent() {
   const handleLogout = () => {
     dispatch(logout());
     navigate("/login");
-    setIsMobileMenuOpen(false); // Close mobile menu on logout
+    setIsMobileMenuOpen(false);
+    setIsProfileOpen(false);
   };
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+    // Close profile dropdown when closing mobile menu
+    if (isMobileMenuOpen) {
+      setIsProfileOpen(false);
+    }
   };
 
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
+    setIsProfileOpen(false);
+  };
+
+  const toggleProfileMenu = () => {
+    setIsProfileOpen(!isProfileOpen);
   };
 
   const menu = [
-    { path: "/", name: "Home", dropdown: false },
-    { path: "/about", name: "About", dropdown: false },
-    { path: "/education", name: "Education", dropdown: false },
-    { path: "/technology", name: "Technology", dropdown: false },
+    { path: "/", name: "Home" },
+    { path: "/about", name: "About" },
+    { path: "/education", name: "Education" },
+    { path: "/technology", name: "Technology" },
+    { path: "/bookmarks", name: "Bookmarked" },
   ];
 
   return (
@@ -46,7 +59,7 @@ export default function NavbarComponent() {
       <div className="px-12 md:px-[150px] mx-auto py-4 flex justify-between items-center">
         {/* Logo */}
         <NavLink to="/" className="flex items-center" onClick={closeMobileMenu}>
-          <img src="/logo.jpeg" alt="Logo" className="h-15 w-auto" />
+          <img src="/logo.jpeg" alt="Logo" className="h-10 w-auto" />
         </NavLink>
 
         {/* Desktop Menu */}
@@ -57,23 +70,19 @@ export default function NavbarComponent() {
               to={item.path}
               className={({ isActive }) =>
                 `nav-link ${
-                  item.dropdown ? "flex items-center space-x-1" : ""
-                } ${
                   isActive
                     ? "text-indigo-800 dark:text-white"
                     : "text-gray-700 dark:text-gray-200"
                 } hover:text-indigo-800 dark:hover:text-white transition-colors duration-300`
               }
             >
-              <span>{item.name}</span>
-              {item.dropdown && <FontAwesomeIcon icon={faCaretDown} />}
+              {item.name}
             </NavLink>
           ))}
         </div>
 
         {/* Right Side - Desktop */}
         <div className="hidden md:flex items-center space-x-4">
-          {/* Write button for logged in users */}
           {token && (
             <Link
               to="/create-blog"
@@ -96,7 +105,6 @@ export default function NavbarComponent() {
             </Link>
           )}
 
-          {/* Show signup/login if not logged in */}
           {!token ? (
             <NavLink
               to="/register"
@@ -105,7 +113,6 @@ export default function NavbarComponent() {
               Sign Up
             </NavLink>
           ) : (
-            // Show profile dropdown if logged in
             <div className="relative group">
               <button className="flex items-center space-x-2">
                 <img
@@ -176,10 +183,12 @@ export default function NavbarComponent() {
         </button>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu - FIXED VERSION */}
       <div
-        className={`md:hidden bg-white dark:bg-gray-800 shadow-lg transition-all duration-300 overflow-hidden ${
-          isMobileMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+        className={`md:hidden bg-white dark:bg-gray-800 shadow-lg transition-all duration-300 ${
+          isMobileMenuOpen
+            ? "max-h-screen opacity-100 visible"
+            : "max-h-0 opacity-0 invisible"
         }`}
       >
         <div className="px-4 py-2 space-y-2">
@@ -201,7 +210,6 @@ export default function NavbarComponent() {
             </NavLink>
           ))}
 
-          {/* Mobile Auth Section */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
             {!token ? (
               <div className="space-y-2">
@@ -244,34 +252,62 @@ export default function NavbarComponent() {
                   Write Story
                 </Link>
 
-                {/* Profile Links */}
-                <NavLink
-                  to="/profile"
-                  onClick={closeMobileMenu}
-                  className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <img
-                    src={user?.profile?.profileUrl || "/default-avatar.png"}
-                    alt="Avatar"
-                    className="w-6 h-6 rounded-full border object-cover"
-                  />
-                  <span>Profile</span>
-                </NavLink>
+                {/* Mobile Profile Dropdown - FIXED VERSION */}
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
+                  <button
+                    onClick={toggleProfileMenu}
+                    className="flex items-center justify-between w-full px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={user?.profile?.profileUrl || "/default-avatar.png"}
+                        alt="Avatar"
+                        className="w-6 h-6 rounded-full border object-cover"
+                      />
+                      <span>{user?.profile?.username || "Profile"}</span>
+                    </div>
+                    <FontAwesomeIcon
+                      icon={faCaretDown}
+                      className={`transition-transform duration-300 ${
+                        isProfileOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
 
-                <NavLink
-                  to="/settings"
-                  onClick={closeMobileMenu}
-                  className="block px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  Settings
-                </NavLink>
+                  {/* Profile Dropdown Menu - FIXED VERSION */}
+                  <div
+                    className={`transition-all duration-300 overflow-hidden ${
+                      isProfileOpen
+                        ? "max-h-40 opacity-100"
+                        : "max-h-0 opacity-0"
+                    }`}
+                  >
+                    <div className="pl-4 space-y-2 mt-2">
+                      <NavLink
+                        to="/profile"
+                        onClick={closeMobileMenu}
+                        className="block px-4 py-2 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        Profile
+                      </NavLink>
 
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-4 py-3 text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  Logout
-                </button>
+                      <NavLink
+                        to="/settings"
+                        onClick={closeMobileMenu}
+                        className="block px-4 py-2 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        Settings
+                      </NavLink>
+
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
