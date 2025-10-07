@@ -93,14 +93,6 @@ const AuthorProfile = () => {
     );
   }
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "Unknown date";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
 
   const getJoinDate = (dateString) => {
     if (!dateString) return "Unknown";

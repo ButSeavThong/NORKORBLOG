@@ -38,7 +38,7 @@ const Footer = () => {
 
         {/* Copyright */}
         <p className="text-sm text-gray-600">
-          © Copyright 2025, All Rights Reserved by CAMPOST
+          © Copyright 2025, All Rights Reserved by NORKORBLOG
         </p>
       </div>
     </footer>

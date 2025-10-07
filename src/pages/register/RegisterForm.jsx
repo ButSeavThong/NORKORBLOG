@@ -117,7 +117,7 @@ function RegisterForm() {
             className="w-28 md:w-40 mb-6"
           />
           <h2 className="text-xl md:text-2xl font-bold mb-2 text-center">
-            Welcome CAMPOST register form
+            Welcome NORKORBLOG register form
           </h2>
           <p className="text-xs md:text-sm text-blue-100 text-center">
             Just a couple of clicks and we start

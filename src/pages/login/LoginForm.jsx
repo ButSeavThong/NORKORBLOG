@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { FaGoogle, FaFacebook, FaGithub } from "react-icons/fa";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -134,7 +133,7 @@ function LoginPage() {
             className="w-28 md:w-40 mb-6"
           />
           <h2 className="text-xl md:text-2xl font-bold mb-2 text-center">
-            Welcome CAMPOST login form
+            Welcome NORKORBLOG login form
           </h2>
           <p className="text-xs md:text-sm text-blue-100 text-center">
             Just a couple of clicks and we start
@@ -263,30 +262,7 @@ function LoginPage() {
               <hr className="flex-1 border-gray-300" />
             </div>
 
-            {/* Social Login Buttons */}
-            <div className="flex flex-col sm:flex-row justify-center gap-3">
-              <button
-                type="button"
-                className="flex items-center justify-center gap-2 border px-4 py-2 rounded-lg text-xs md:text-sm hover:bg-gray-100 w-full sm:w-auto transition disabled:opacity-60"
-                disabled={loading}
-              >
-                <FaGoogle className="text-red-500" /> Google
-              </button>
-              <button
-                type="button"
-                className="flex items-center justify-center gap-2 border px-4 py-2 rounded-lg text-xs md:text-sm hover:bg-gray-100 w-full sm:w-auto transition disabled:opacity-60"
-                disabled={loading}
-              >
-                <FaFacebook className="text-blue-600" /> Facebook
-              </button>
-              <button
-                type="button"
-                className="flex items-center justify-center gap-2 border px-4 py-2 rounded-lg text-xs md:text-sm hover:bg-gray-100 w-full sm:w-auto transition disabled:opacity-60"
-                disabled={loading}
-              >
-                <FaGithub className="text-gray-800" /> Github
-              </button>
-            </div>
+            
           </form>
 
           {/* Registration Link */}
