@@ -1,7 +1,20 @@
-// CamPostHome.js
 import React from "react";
-import { FaGithub, FaFacebook, FaLinkedin, FaEnvelope, FaArrowRight } from "react-icons/fa";
-import { NavLink } from "react-router";
+import {
+  FaGithub,
+  FaFacebook,
+  FaLinkedin,
+  FaEnvelope,
+  FaArrowRight,
+} from "react-icons/fa";
+import { NavLink } from "react-router-dom";
+
+// Import all images
+import LearnIcon from "/learn.png";
+import ShareIcon from "/share.png";
+import HowToLearnImage from "/how.png";
+import PostImage from "/post.png";
+import MentorImage from "/mentor.png";
+import StudentImage from "/student.png";
 
 // SocialIcon component
 function SocialIcon({ icon: Icon, url }) {
@@ -23,7 +36,7 @@ const CamPostHome = () => {
       id: 1,
       name: "Sin SreyPhea",
       role: "Senior Developer",
-      image: "/mentor.png",
+      image: MentorImage,
       socialLinks: [
         { icon: FaGithub, url: "https://github.com" },
         { icon: FaLinkedin, url: "https://linkedin.com" },
@@ -35,7 +48,7 @@ const CamPostHome = () => {
       id: 2,
       name: "But SeavThong",
       role: "Junior Developer",
-      image: "/student.png",
+      image: StudentImage,
       socialLinks: [
         { icon: FaGithub, url: "https://github.com" },
         { icon: FaLinkedin, url: "https://linkedin.com" },
@@ -59,7 +72,6 @@ const CamPostHome = () => {
         <button className="mt-8 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300 flex items-center justify-center mx-auto">
           Get Started <FaArrowRight className="ml-2" />
         </button>
-        
       </section>
 
       {/* Join Us Section */}
@@ -67,7 +79,7 @@ const CamPostHome = () => {
         <div className="bg-white rounded-xl shadow-lg p-6 text-center hover:shadow-xl transition-shadow duration-300">
           <div className="mx-auto mb-4 w-24 h-24 md:w-32 md:h-32 bg-blue-100 rounded-full flex items-center justify-center">
             <img
-              src="/learn.png"
+              src={LearnIcon}
               alt="Learn"
               className="w-16 h-16 md:w-20 md:h-20 object-contain"
             />
@@ -82,7 +94,7 @@ const CamPostHome = () => {
         <div className="bg-white rounded-xl shadow-lg p-6 text-center hover:shadow-xl transition-shadow duration-300">
           <div className="mx-auto mb-4 w-24 h-24 md:w-32 md:h-32 bg-pink-100 rounded-full flex items-center justify-center">
             <img
-              src="/share.png"
+              src={ShareIcon}
               alt="Share"
               className="w-16 h-16 md:w-20 md:h-20 object-contain"
             />
@@ -105,7 +117,7 @@ const CamPostHome = () => {
           <div className="bg-blue-50 p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300">
             <div className="mb-4 w-full h-40 bg-blue-100 rounded-lg flex items-center justify-center">
               <img
-                src="/how.png"
+                src={HowToLearnImage}
                 alt="How to Learn"
                 className="w-full h-full object-contain p-4"
               />
@@ -122,7 +134,7 @@ const CamPostHome = () => {
           <div className="bg-purple-50 p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300">
             <div className="mb-4 w-full h-40 bg-purple-100 rounded-lg flex items-center justify-center">
               <img
-                src="/post.png"
+                src={PostImage}
                 alt="How to Post"
                 className="w-full h-full object-contain p-4"
               />
@@ -141,7 +153,9 @@ const CamPostHome = () => {
 
       {/* Mentors Section */}
       <section className="py-8 md:py-12">
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 md:mb-12">Mentor & Student</h2>
+        <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 md:mb-12">
+          Mentor & Student
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 max-w-6xl mx-auto">
           {mentors.map((mentor) => (
             <div key={mentor.id} className="relative group">
@@ -159,11 +173,19 @@ const CamPostHome = () => {
                   />
                 </div>
                 <div className="flex-1 text-center sm:text-left">
-                  <h3 className="text-lg md:text-xl font-bold">{mentor.name}</h3>
-                  <p className="text-orange-500 font-medium mb-2 md:mb-3">{mentor.role}</p>
+                  <h3 className="text-lg md:text-xl font-bold">
+                    {mentor.name}
+                  </h3>
+                  <p className="text-orange-500 font-medium mb-2 md:mb-3">
+                    {mentor.role}
+                  </p>
                   <div className="flex justify-center sm:justify-start space-x-2">
                     {mentor.socialLinks.map((social, idx) => (
-                      <SocialIcon key={idx} icon={social.icon} url={social.url} />
+                      <SocialIcon
+                        key={idx}
+                        icon={social.icon}
+                        url={social.url}
+                      />
                     ))}
                   </div>
                 </div>
@@ -179,10 +201,14 @@ const CamPostHome = () => {
           Ready to Join Our Community?
         </h2>
         <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-          Start sharing your knowledge or learn from experts in education and technology.
+          Start sharing your knowledge or learn from experts in education and
+          technology.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <NavLink to='/register' className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300">
+          <NavLink
+            to="/register"
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300 text-center"
+          >
             Sign Up Now
           </NavLink>
           <button className="px-6 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors duration-300">
