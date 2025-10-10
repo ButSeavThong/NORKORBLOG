@@ -4,11 +4,11 @@ import Footer from "./Footer";
 
 export default function RootLayout() {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen overflow-x-hidden">
       {" "}
       {/* Changed from h-screen to min-h-screen */}
       <NavbarComponent />
-      <main className="flex-grow pt-16">
+      <main className="flex-grow pt-16 w-full px-4 md:px-6 lg:px-8">
         {" "}
         {/* Added pt-16 for navbar spacing */}
         <Outlet />
